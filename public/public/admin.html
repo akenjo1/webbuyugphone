@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8 flex justify-center">
+    <div class="w-full max-w-md space-y-4">
+        <h1 class="text-2xl font-bold text-center">TẠO GIFTCODE</h1>
+        <input id="code" placeholder="Mã Code (VD: FREE100)" class="w-full bg-gray-800 p-2 rounded border border-gray-700">
+        <input id="reward" type="number" placeholder="Số Xu thưởng" class="w-full bg-gray-800 p-2 rounded border border-gray-700">
+        <input id="max" type="number" placeholder="Số người tối đa" class="w-full bg-gray-800 p-2 rounded border border-gray-700">
+        <input id="pass" type="password" placeholder="Mật khẩu Admin" class="w-full bg-gray-800 p-2 rounded border border-red-900">
+        <button onclick="create()" class="w-full bg-red-600 py-2 rounded font-bold hover:bg-red-500">TẠO NGAY</button>
+    </div>
+    <script>
+        async function create() {
+            const res = await fetch('/api/create-code', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    code: document.getElementById('code').value,
+                    reward: document.getElementById('reward').value,
+                    max_users: document.getElementById('max').value,
+                    password: document.getElementById('pass').value
+                })
+            });
+            const data = await res.json();
+            alert(data.message || data.error);
+        }
+    </script>
+</body>
+</html>
+
+
