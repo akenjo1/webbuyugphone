@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ntrong Tool Shop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-4">
+
+    <div class="max-w-md mx-auto space-y-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow">
+            <h1 class="font-bold text-green-400 text-xl">TOOL NTRONG</h1>
+            <div id="userArea" class="hidden flex items-center gap-3">
+                <span class="text-yellow-400 font-bold"><i class="fa-solid fa-coins"></i> <span id="balance">0</span></span>
+                <button onclick="auth.signOut()" class="text-red-400 text-sm">Thoát</button>
+            </div>
+            <button id="loginBtn" onclick="login()" class="bg-blue-600 px-4 py-1 rounded text-sm font-bold">Login Google</button>
+        </div>
+
+        <!-- Earn Section -->
+        <div id="mainContent" class="hidden space-y-6">
+            
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <h2 class="font-bold text-lg mb-2 text-blue-400">1. Kiếm Xu (3 lượt/ngày)</h2>
+                <button onclick="genLink()" id="btnLink" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded font-bold mb-3">
+                    Vượt Link (+100 Xu)
+                </button>
+                <div class="flex gap-2">
+                    <input id="code" type="text" placeholder="Nhập mã..." class="bg-gray-900 border border-gray-600 rounded px-3 py-2 w-full text-center uppercase">
+                    <button onclick="claim()" class="bg-green-600 px-4 rounded font-bold">Nhận</button>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <h2 class="font-bold text-lg mb-2 text-purple-400">2. Mua Dịch Vụ (50 Xu)</h2>
+                
+                <div class="flex gap-2 mb-3">
+                    <button onclick="setType('TRIAL')" id="btnTrial" class="flex-1 bg-purple-600 py-2 rounded font-bold opacity-50">TRIAL</button>
+                    <button onclick="setType('BUFF')" id="btnBuff" class="flex-1 bg-pink-600 py-2 rounded font-bold opacity-50">BUFF</button>
+                </div>
+
+                <textarea id="inputData" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded p-3 mb-3" placeholder="Nhập dữ liệu..."></textarea>
+                
+                <button onclick="buy()" id="btnBuy" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded font-bold text-lg">
+                    THỰC HIỆN NGAY
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // CẤU HÌNH FIREBASE CỦA BẠN
+        const firebaseConfig = { 
+            // ... Dán config firebase vào đây ...
+            apiKey: "AIzaSy...", 
+            authDomain: "...", 
+            projectId: "...", 
+            storageBucket: "...", 
+            messagingSenderId: "...", 
+            appId: "..." 
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        let currentUser = null;
+        let selectedType = '';
+
+        auth.onAuthStateChanged(u => {
+            if(u) {
+                currentUser = u;
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('userArea').classList.remove('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+                db.collection('users').doc(u.uid).onSnapshot(s => {
+                    document.getElementById('balance').innerText = s.data()?.balance || 0;
+                });
+            } else {
+                window.location.reload();
+            }
+        });
+
+        function login() {
+            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        }
+
+        function setType(type) {
+            selectedType = type;
+            document.getElementById('btnTrial').classList.toggle('opacity-100', type === 'TRIAL');
+            document.getElementById('btnTrial').classList.toggle('opacity-50', type !== 'TRIAL');
+            document.getElementById('btnBuff').classList.toggle('opacity-100', type === 'BUFF');
+            document.getElementById('btnBuff').classList.toggle('opacity-50', type !== 'BUFF');
+        }
+
+        async function genLink() {
+            const btn = document.getElementById('btnLink');
+            btn.disabled = true; btn.innerText = 'Đang tạo...';
+            try {
+                const res = await fetch('/api/gen-link', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ uid: currentUser.uid, host_url: window.location.origin })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    window.open(data.shortenedUrl, '_blank');
+                    alert(`Đã tạo link! Bạn còn ${data.remaining} lượt hôm nay.`);
+                } else {
+                    alert(data.error);
+                }
+            } catch(e) { alert('Lỗi mạng'); }
+            finally { btn.disabled = false; btn.innerText = 'Vượt Link (+100 Xu)'; }
+        }
+
+        async function claim() {
+            const code = document.getElementById('code').value;
+            if(!code) return alert('Nhập mã đi!');
+            const res = await fetch('/api/claim', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ uid: currentUser.uid, code })
+            });
+            const data = await res.json();
+            alert(data.message || data.error);
+            if(data.success) document.getElementById('code').value = '';
+        }
+
+        async function buy() {
+            if(!selectedType) return alert('Chọn Trial hoặc Buff trước!');
+            const input = document.getElementById('inputData').value;
+            if(!input) return alert('Nhập dữ liệu vào!');
+            
+            if(!confirm(`Xác nhận dùng dịch vụ ${selectedType} với giá 50 Xu?`)) return;
+
+            const btn = document.getElementById('btnBuy');
+            btn.disabled = true; btn.innerText = 'Đang xử lý...';
+
+            try {
+                const res = await fetch('/api/buy', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        uid: currentUser.uid,
+                        type: selectedType,
+                        input_data: input
+                    })
+                });
+                const data = await res.json();
+                if(data.success) alert('Thành công: ' + data.message);
+                else alert('Thất bại: ' + data.message);
+            } catch(e) { alert('Lỗi kết nối'); }
+            finally { btn.disabled = false; btn.innerText = 'THỰC HIỆN NGAY'; }
+        }
+    </script>
+</body>
+</html>
+
+
