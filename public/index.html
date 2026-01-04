@@ -5,66 +5,196 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ntrong Tool Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDK Compat (Phiên bản chạy trực tiếp trên trình duyệt) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-</head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-4">
 
-    <div class="max-w-md mx-auto space-y-6">
-        <!-- Header -->
-        <div class="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow">
-            <h1 class="font-bold text-green-400 text-xl">TOOL NTRONG</h1>
-            <div id="userArea" class="hidden flex items-center gap-3">
-                <span class="text-yellow-400 font-bold"><i class="fa-solid fa-coins"></i> <span id="balance">0</span></span>
-                <button onclick="auth.signOut()" class="text-red-400 text-sm hover:text-red-300">Thoát</button>
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        
+        /* Hiệu ứng nền */
+        .bg-gradient-animate {
+            background: linear-gradient(-45deg, #0f172a, #1e293b, #0f172a, #111827);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        /* Input Focus Effect */
+        .input-glow:focus {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+            border-color: #3b82f6;
+        }
+
+        /* Animation tiền nhảy */
+        @keyframes coin-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .coin-icon { animation: coin-bounce 2s infinite ease-in-out; }
+    </style>
+</head>
+<body class="bg-gradient-animate text-slate-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md space-y-6 relative z-10">
+        
+        <!-- HEADER -->
+        <div class="glass-card rounded-2xl p-5 flex justify-between items-center transition hover:border-blue-500/30">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-rocket text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-tight text-white">NTRONG TOOL</h1>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-widest">Premium Service</p>
+                </div>
             </div>
-            <button id="loginBtn" onclick="login()" class="bg-blue-600 px-4 py-1 rounded text-sm font-bold hover:bg-blue-500 transition">Login Google</button>
+
+            <!-- User Info (Hidden by default) -->
+            <div id="userArea" class="hidden flex items-center gap-3 bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-700">
+                <span class="text-yellow-400 font-bold flex items-center gap-1.5">
+                    <i class="fa-solid fa-coins coin-icon"></i> 
+                    <span id="balance" class="text-white">0</span>
+                </span>
+                <button onclick="auth.signOut()" class="w-7 h-7 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition flex items-center justify-center">
+                    <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Login Button -->
+            <button id="loginBtn" onclick="login()" class="bg-white text-slate-900 px-5 py-2 rounded-xl font-bold text-sm hover:bg-blue-50 transition shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                <i class="fa-brands fa-google mr-1"></i> Đăng nhập
+            </button>
         </div>
 
-        <!-- Earn Section -->
+        <!-- MAIN CONTENT (Hidden until login) -->
         <div id="mainContent" class="hidden space-y-6">
             
-            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h2 class="font-bold text-lg mb-2 text-blue-400">1. Kiếm Xu (3 lượt/ngày)</h2>
-                <button onclick="genLink()" id="btnLink" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded font-bold mb-3 transition">
-                    Vượt Link (+100 Xu)
+            <!-- 1. Kiếm Xu -->
+            <div class="glass-card rounded-2xl p-6 relative overflow-hidden group">
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition transform group-hover:scale-110">
+                    <i class="fa-solid fa-link text-6xl text-blue-500"></i>
+                </div>
+                
+                <h2 class="font-bold text-lg mb-4 text-blue-400 flex items-center gap-2">
+                    <i class="fa-solid fa-sack-dollar"></i> KIẾM XU <span class="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full ml-auto">3 lượt/ngày</span>
+                </h2>
+                
+                <button onclick="genLink()" id="btnLink" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 py-3 rounded-xl font-bold mb-4 shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]">
+                    <i class="fa-solid fa-arrow-up-right-from-square mr-2"></i> Vượt Link (+100 Xu)
                 </button>
-                <div class="flex gap-2">
-                    <input id="code" type="text" placeholder="Nhập mã..." class="bg-gray-900 border border-gray-600 rounded px-3 py-2 w-full text-center uppercase focus:border-blue-500 outline-none">
-                    <button onclick="claim()" class="bg-green-600 px-4 rounded font-bold hover:bg-green-500 transition">Nhận</button>
+                
+                <div class="relative">
+                    <input id="code" type="text" placeholder="Nhập mã xác nhận..." class="input-glow w-full bg-slate-800/80 border border-slate-600 rounded-xl px-4 py-3 text-center uppercase tracking-widest font-mono focus:outline-none transition-all placeholder-slate-500">
+                    <button onclick="claim()" class="absolute right-1 top-1 bottom-1 bg-green-500 hover:bg-green-400 text-white px-4 rounded-lg font-bold transition shadow-lg">
+                        <i class="fa-solid fa-check"></i>
+                    </button>
                 </div>
             </div>
 
-            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h2 class="font-bold text-lg mb-2 text-purple-400">2. Mua Dịch Vụ (50 Xu)</h2>
+            <!-- 2. Mua Dịch Vụ -->
+            <div class="glass-card rounded-2xl p-6 relative">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-lg text-purple-400 flex items-center gap-2">
+                        <i class="fa-solid fa-cart-shopping"></i> CỬA HÀNG
+                    </h2>
+                    <span class="text-xs font-bold text-slate-400 bg-slate-700/50 px-2 py-1 rounded">Giá: 50 Xu</span>
+                </div>
                 
-                <div class="flex gap-2 mb-3">
-                    <button onclick="setType('TRIAL')" id="btnTrial" class="flex-1 bg-purple-600 py-2 rounded font-bold opacity-50 hover:opacity-80 transition">TRIAL</button>
-                    <button onclick="setType('BUFF')" id="btnBuff" class="flex-1 bg-pink-600 py-2 rounded font-bold opacity-50 hover:opacity-80 transition">BUFF</button>
+                <!-- Service Selector -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <!-- Nút TRIAL (Mở) -->
+                    <button onclick="setType('TRIAL')" id="btnTrial" class="relative overflow-hidden group bg-slate-700/50 border border-slate-600 py-3 rounded-xl font-bold text-slate-300 transition-all hover:bg-slate-700 hover:border-purple-500 hover:text-white">
+                        <div class="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 transition"></div>
+                        <span class="relative z-10"><i class="fa-solid fa-bolt mr-1"></i> TRIAL</span>
+                    </button>
+
+                    <!-- Nút BUFF (Khóa) -->
+                    <button onclick="clickLockedBuff()" id="btnBuff" class="relative bg-slate-800/80 border border-slate-700 border-dashed py-3 rounded-xl font-bold text-slate-500 cursor-not-allowed group">
+                        <div class="absolute inset-0 bg-black/20 rounded-xl"></div>
+                        <span class="relative z-10 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-lock text-red-500 group-hover:scale-110 transition"></i> BUFF KC
+                        </span>
+                        <!-- Tooltip nhẹ -->
+                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap shadow-xl">
+                            Liên hệ Admin để mở
+                        </div>
+                    </button>
                 </div>
 
-                <textarea id="inputData" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded p-3 mb-3 focus:border-purple-500 outline-none" placeholder="Nhập dữ liệu..."></textarea>
-                
-                <button onclick="buy()" id="btnBuy" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded font-bold text-lg transition shadow-lg active:scale-95">
-                    THỰC HIỆN NGAY
-                </button>
+                <!-- Input Area (Ẩn khi chưa chọn) -->
+                <div id="inputArea" class="hidden transition-all duration-300 space-y-4">
+                    
+                    <!-- Chọn Server (Mới thêm vào) -->
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block uppercase">Chọn Server</label>
+                        <select id="serverRegion" class="input-glow w-full bg-slate-800/80 border border-slate-600 rounded-xl p-3 text-white focus:outline-none transition-all cursor-pointer">
+                            <option value="SG">🇸🇬 Singapore</option>
+                            <option value="US">🇺🇸 United States</option>
+                            <option value="HK">🇭🇰 Hong Kong</option>
+                            <option value="JP">🇯🇵 Japan</option>
+                            <option value="DE">🇩🇪 Germany</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block uppercase">Dữ liệu đầu vào</label>
+                        <textarea id="inputData" rows="3" class="input-glow w-full bg-slate-800/80 border border-slate-600 rounded-xl p-3 focus:outline-none transition-all font-mono text-sm placeholder-slate-500" placeholder="Nhập dữ liệu tài khoản..."></textarea>
+                    </div>
+                    
+                    <button onclick="buy()" id="btnBuy" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 py-3.5 rounded-xl font-bold text-white shadow-lg shadow-green-500/20 transition-all active:scale-[0.98] flex justify-center items-center gap-2">
+                        <span>THỰC HIỆN NGAY</span> <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+
+                <!-- Thông báo khóa -->
+                <div id="lockMessage" class="hidden bg-slate-800/80 border border-slate-700 p-4 rounded-xl text-center">
+                    <i class="fa-brands fa-telegram text-4xl text-sky-500 mb-2"></i>
+                    <p class="text-sm text-slate-300">Chức năng này dành cho VIP.</p>
+                    <p class="text-xs text-slate-400 mt-1">Vui lòng liên hệ Telegram:</p>
+                    <a href="https://t.me/akenjo2" target="_blank" class="inline-block mt-3 bg-sky-600 hover:bg-sky-500 text-white px-4 py-1.5 rounded-lg font-bold text-sm transition">
+                        @akenjo2
+                    </a>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center text-slate-500 text-xs mt-8">
+                <p>&copy; 2024 Ntrong Tool Shop.</p>
+                <p class="mt-1">Support: <a href="https://t.me/akenjo2" class="text-sky-500 hover:underline">@akenjo2</a></p>
             </div>
 
         </div>
     </div>
 
     <!-- Notification Toast -->
-    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-4 rounded-lg shadow-2xl border-l-4 border-blue-500 transform translate-y-20 opacity-0 transition-all duration-300 z-50 max-w-sm">
-        <div class="font-bold mb-1" id="toastTitle">Thông báo</div>
-        <div class="text-sm text-gray-300" id="toastMessage">Nội dung</div>
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white px-6 py-4 rounded-lg shadow-2xl border-l-4 border-blue-500 transform translate-y-32 opacity-0 transition-all duration-300 z-50 max-w-sm flex items-start gap-3">
+        <div id="toastIcon" class="mt-1"></div>
+        <div>
+            <div class="font-bold text-sm" id="toastTitle">Thông báo</div>
+            <div class="text-xs text-slate-300 mt-1" id="toastMessage">Nội dung</div>
+        </div>
     </div>
 
     <script>
-        // --- CẤU HÌNH FIREBASE MỚI CỦA BẠN ---
+        // --- CẤU HÌNH FIREBASE CỦA BẠN ---
         const firebaseConfig = {
             apiKey: "AIzaSyB_FFa4dkO_iHKffJnZtGN1RJWGIDvs7Ds",
             authDomain: "webbuyugphone.firebaseapp.com",
@@ -74,19 +204,15 @@
             appId: "1:1019689724020:web:00ff76d99e0efccb0c0921"
         };
         
-        // Khởi tạo Firebase
-        try {
-            firebase.initializeApp(firebaseConfig);
-        } catch (e) {
-            console.error("Firebase init error:", e);
-        }
+        try { firebase.initializeApp(firebaseConfig); } catch (e) { console.error(e); }
         
         const auth = firebase.auth();
         const db = firebase.firestore();
         let currentUser = null;
         let selectedType = '';
+        let toastTimeout = null;
 
-        // Theo dõi trạng thái đăng nhập
+        // --- AUTH LOGIC ---
         auth.onAuthStateChanged(u => {
             if(u) {
                 currentUser = u;
@@ -94,7 +220,6 @@
                 document.getElementById('userArea').classList.remove('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
                 
-                // Lắng nghe số dư
                 db.collection('users').doc(u.uid).onSnapshot(s => {
                     document.getElementById('balance').innerText = s.data()?.balance || 0;
                 });
@@ -106,32 +231,42 @@
             }
         });
 
-        // Hàm Đăng nhập
         function login() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).catch(error => {
-                showToast('Lỗi Đăng Nhập', error.message, 'error');
-            });
+            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => showToast('Lỗi', e.message, 'error'));
         }
 
-        // Hàm chọn loại dịch vụ
+        // --- LOGIC CHỌN DỊCH VỤ ---
         function setType(type) {
             selectedType = type;
-            document.getElementById('btnTrial').classList.toggle('opacity-100', type === 'TRIAL');
-            document.getElementById('btnTrial').classList.toggle('opacity-50', type !== 'TRIAL');
-            document.getElementById('btnTrial').classList.toggle('ring-2', type === 'TRIAL');
+            const btnTrial = document.getElementById('btnTrial');
             
-            document.getElementById('btnBuff').classList.toggle('opacity-100', type === 'BUFF');
-            document.getElementById('btnBuff').classList.toggle('opacity-50', type !== 'BUFF');
-            document.getElementById('btnBuff').classList.toggle('ring-2', type === 'BUFF');
+            // Kích hoạt Trial
+            btnTrial.classList.remove('bg-slate-700/50', 'text-slate-300');
+            btnTrial.classList.add('bg-purple-600', 'text-white', 'border-purple-500', 'shadow-lg', 'shadow-purple-500/30');
+            
+            // Hiển thị khung nhập liệu, ẩn thông báo khóa
+            document.getElementById('inputArea').classList.remove('hidden');
+            document.getElementById('lockMessage').classList.add('hidden');
         }
 
-        // Hàm tạo Link rút gọn
+        function clickLockedBuff() {
+            selectedType = ''; // Reset selection
+            const btnTrial = document.getElementById('btnTrial');
+            btnTrial.classList.add('bg-slate-700/50', 'text-slate-300');
+            btnTrial.classList.remove('bg-purple-600', 'text-white', 'border-purple-500', 'shadow-lg', 'shadow-purple-500/30');
+
+            document.getElementById('inputArea').classList.add('hidden');
+            document.getElementById('lockMessage').classList.remove('hidden');
+            
+            showToast('Tính năng VIP', 'Vui lòng liên hệ Admin @akenjo2 để mở khóa!', 'warning');
+        }
+
+        // --- API CALLS ---
         async function genLink() {
-            if(!currentUser) return showToast('Lỗi', 'Vui lòng đăng nhập!', 'error');
             const btn = document.getElementById('btnLink');
+            const originalText = btn.innerHTML;
             btn.disabled = true; 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo...';
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang tạo...';
             
             try {
                 const res = await fetch('/api/gen-link', {
@@ -143,23 +278,20 @@
                 
                 if(data.success) {
                     window.open(data.shortenedUrl, '_blank');
-                    showToast('Thành Công', `Đã tạo link! Bạn còn ${data.remaining} lượt hôm nay.`, 'success');
+                    showToast('Thành Công', `Link đã tạo! Còn ${data.remaining} lượt.`, 'success');
                 } else {
-                    showToast('Thất Bại', data.error, 'error');
+                    showToast('Lỗi', data.error, 'error');
                 }
-            } catch(e) { 
-                showToast('Lỗi Mạng', 'Không thể kết nối Server', 'error'); 
-            } finally { 
+            } catch(e) { showToast('Lỗi Mạng', 'Không kết nối được Server', 'error'); } 
+            finally { 
                 btn.disabled = false; 
-                btn.innerText = 'Vượt Link (+100 Xu)'; 
+                btn.innerHTML = originalText; 
             }
         }
 
-        // Hàm Nhập Mã
         async function claim() {
-            if(!currentUser) return;
             const code = document.getElementById('code').value.trim();
-            if(!code) return showToast('Thiếu Mã', 'Vui lòng nhập mã code!', 'warning');
+            if(!code) return showToast('Thiếu Mã', 'Nhập mã vào đi bạn ơi!', 'warning');
             
             const res = await fetch('/api/claim', {
                 method: 'POST',
@@ -169,28 +301,28 @@
             const data = await res.json();
             
             if(data.success) {
-                showToast('Thành Công', data.message, 'success');
+                showToast('Tuyệt vời', data.message, 'success');
                 document.getElementById('code').value = '';
             } else {
-                showToast('Thất Bại', data.error || data.message, 'error');
+                showToast('Thất bại', data.error || data.message, 'error');
             }
         }
 
-        // Hàm Mua Dịch Vụ
         async function buy() {
-            if(!currentUser) return;
-            if(!selectedType) return showToast('Chưa chọn loại', 'Vui lòng chọn TRIAL hoặc BUFF!', 'warning');
+            if(!selectedType) return showToast('Chưa chọn', 'Vui lòng chọn loại dịch vụ!', 'warning');
             const input = document.getElementById('inputData').value.trim();
-            if(!input) return showToast('Thiếu dữ liệu', 'Vui lòng nhập dữ liệu đầu vào!', 'warning');
+            const server = document.getElementById('serverRegion').value; // Lấy giá trị Server
+            
+            if(!input) return showToast('Thiếu dữ liệu', 'Nhập thông tin tài khoản!', 'warning');
             
             const currentBal = parseInt(document.getElementById('balance').innerText) || 0;
-            if(currentBal < 50) return showToast('Không đủ tiền', 'Bạn cần 50 Xu để thực hiện.', 'error');
+            if(currentBal < 50) return showToast('Không đủ tiền', 'Cần 50 Xu để thực hiện.', 'error');
 
-            if(!confirm(`Xác nhận dùng dịch vụ ${selectedType} với giá 50 Xu?`)) return;
+            if(!confirm(`Xác nhận dùng dịch vụ ${selectedType} (Server ${server}) với giá 50 Xu?`)) return;
 
             const btn = document.getElementById('btnBuy');
             btn.disabled = true; 
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang xử lý...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
 
             try {
                 const res = await fetch('/api/buy', {
@@ -199,6 +331,7 @@
                     body: JSON.stringify({
                         uid: currentUser.uid,
                         type: selectedType,
+                        server: server, // Gửi thêm Server lên Backend
                         input_data: input
                     })
                 });
@@ -213,27 +346,38 @@
                 showToast('Lỗi Mạng', 'Lỗi kết nối đến Server', 'error'); 
             } finally { 
                 btn.disabled = false; 
-                btn.innerText = 'THỰC HIỆN NGAY'; 
+                btn.innerHTML = '<span>THỰC HIỆN NGAY</span> <i class="fa-solid fa-paper-plane"></i>'; 
             }
         }
 
-        // Hàm hiển thị thông báo đẹp (Toast)
-        function showToast(title, message, type = 'info') {
+        function showToast(title, msg, type) {
             const toast = document.getElementById('toast');
-            document.getElementById('toastTitle').textContent = title;
-            document.getElementById('toastMessage').textContent = message;
+            const icon = document.getElementById('toastIcon');
+            document.getElementById('toastTitle').innerText = title;
+            document.getElementById('toastMessage').innerText = msg;
 
-            // Reset classes
-            toast.className = `fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-4 rounded-lg shadow-2xl border-l-4 transform transition-all duration-300 z-50 max-w-sm translate-y-0 opacity-100`;
+            let borderColor = 'border-blue-500';
+            let iconHtml = '<i class="fa-solid fa-info-circle text-blue-500 text-xl"></i>';
+
+            if (type === 'success') {
+                borderColor = 'border-green-500';
+                iconHtml = '<i class="fa-solid fa-check-circle text-green-500 text-xl"></i>';
+            } else if (type === 'error') {
+                borderColor = 'border-red-500';
+                iconHtml = '<i class="fa-solid fa-triangle-exclamation text-red-500 text-xl"></i>';
+            } else if (type === 'warning') {
+                borderColor = 'border-yellow-500';
+                iconHtml = '<i class="fa-solid fa-lock text-yellow-500 text-xl"></i>';
+            }
+
+            toast.className = `fixed bottom-5 right-5 bg-slate-800 text-white px-6 py-4 rounded-xl shadow-2xl border-l-4 ${borderColor} translate-y-32 opacity-0 transition-all duration-500 z-50 max-w-sm flex items-start gap-3`;
+            icon.innerHTML = iconHtml;
+
+            setTimeout(() => toast.classList.remove('translate-y-32', 'opacity-0'), 100);
             
-            if (type === 'success') toast.classList.add('border-green-500');
-            else if (type === 'error') toast.classList.add('border-red-500');
-            else if (type === 'warning') toast.classList.add('border-yellow-500');
-            else toast.classList.add('border-blue-500');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-32', 'opacity-0');
             }, 3000);
         }
     </script>
